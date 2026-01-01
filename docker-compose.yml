@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - EDIT_MODE=true
+      - USE_CDN=false
+      - PHOTOS_DIR=/app/photos
+      - DATABASE_PATH=/app/photos_metadata.db
+      - BACKEND_URL=http://localhost:5001
+      # R2 credentials (optional, for deployment)
+      - R2_ENDPOINT_URL=${R2_ENDPOINT_URL:-}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME:-}
+    volumes:
+      # Mount local photos directory
+      - ./backend/photos:/app/photos
+      # Persist database
+      - ./backend/photos_metadata.db:/app/photos_metadata.db
+      # Persist thumbnails
+      - ./backend/thumbnails:/app/thumbnails
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:5001/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  photos:
+  database:
+  thumbnails:

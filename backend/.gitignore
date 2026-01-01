@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# UV
+.venv/
+uv.lock
+
+# Environment
+.env
+
+# Photos (uncomment to exclude from git)
+# photos/
+
+# IDE
+.vscode/
+.idea/
+
+photos/
+thumbnails/
+photos_metadata.db
