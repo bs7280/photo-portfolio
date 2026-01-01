@@ -14,7 +14,7 @@ build/
 
 # UV
 .venv/
-uv.lock
+#uv.lock
 
 # Environment
 .env
