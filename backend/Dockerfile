@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 COPY --from=ghcr.io/astral-sh/uv:0.9.21 /uv /usr/local/bin/
 
 # Copy dependency files
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock ./
 
 # Install dependencies with uv
 RUN uv sync --frozen --no-dev
