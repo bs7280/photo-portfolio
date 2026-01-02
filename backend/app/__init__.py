@@ -15,6 +15,14 @@ def create_app():
     with app.app_context():
         database.init_db()
 
+        # Auto-sync photos on startup when not using CDN
+        from app.config import Config
+        if not Config.USE_CDN:
+            from app.photo_service import PhotoService
+            photo_service = PhotoService()
+            result = photo_service.sync_database()
+            print(f"Auto-sync on startup: added {result['added']}, removed {result['removed']}")
+
     from app import routes
     app.register_blueprint(routes.bp)
 
