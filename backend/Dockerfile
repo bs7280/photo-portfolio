@@ -1,3 +1,21 @@
+# Stage 1: Build frontend with Node/Vite
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /frontend
+
+# Copy frontend package files
+COPY frontend/package.json frontend/package-lock.json ./
+
+# Install frontend dependencies
+RUN npm ci
+
+# Copy frontend source code
+COPY frontend/ ./
+
+# Build frontend (creates /frontend/dist)
+RUN npm run build
+
+# Stage 2: Build backend with Python
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -13,13 +31,16 @@ RUN apt-get update && apt-get install -y \
 COPY --from=ghcr.io/astral-sh/uv:0.9.21 /uv /usr/local/bin/
 
 # Copy dependency files
-COPY pyproject.toml uv.lock ./
+COPY backend/pyproject.toml backend/uv.lock ./
 
 # Install dependencies with uv
 RUN uv sync --frozen --no-dev
 
 # Copy application code
-COPY . .
+COPY backend/ ./
+
+# Copy frontend built files into Flask static folder
+COPY --from=frontend-builder /frontend/dist ./app/static
 
 # Create photos and thumbnails directories
 RUN mkdir -p /app/photos /app/thumbnails

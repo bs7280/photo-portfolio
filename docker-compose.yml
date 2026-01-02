@@ -1,10 +1,10 @@
 version: '3.8'
 
 services:
-  backend:
+  app:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./backend/Dockerfile
     ports:
       - "5001:5001"
     environment:
@@ -12,7 +12,7 @@ services:
       - EDIT_MODE=true
       - USE_CDN=false
       - PHOTOS_DIR=/app/photos
-      - DATABASE_PATH=/app/photos_metadata.db
+      - DATABASE_PATH=/app/data/photos_metadata.db
       - BACKEND_URL=http://localhost:5001
       # R2 credentials (optional, for deployment)
       - R2_ENDPOINT_URL=${R2_ENDPOINT_URL:-}
@@ -22,25 +22,13 @@ services:
     volumes:
       # Mount local photos directory
       - ./backend/photos:/app/photos
-      # Persist database
-      - ./backend/photos_metadata.db:/app/photos_metadata.db
+      # Persist database directory
+      - ./backend/data:/app/data
       # Persist thumbnails
       - ./backend/thumbnails:/app/thumbnails
     restart: unless-stopped
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:80"
-    environment:
-      - VITE_API_URL=http://localhost:5001/api
-    depends_on:
-      - backend
-    restart: unless-stopped
-
 volumes:
   photos:
-  database:
+  data:
   thumbnails:

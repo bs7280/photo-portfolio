@@ -37,3 +37,6 @@ Thumbs.db
 frontend/node_modules/
 frontend/dist/
 frontend/.env.local
+
+# Backend static files (built frontend)
+backend/app/static/

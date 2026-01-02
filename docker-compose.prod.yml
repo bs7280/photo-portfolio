@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  backend:
-    image: ghcr.io/${GITHUB_USERNAME}/photography-portfolio-backend:latest
+  app:
+    image: ghcr.io/${GITHUB_USERNAME}/photo-portfolio-backend:latest
     ports:
       - "5001:5001"
     environment:
@@ -10,7 +10,7 @@ services:
       - EDIT_MODE=false
       - USE_CDN=true
       - CDN_BASE_URL=${CDN_BASE_URL}
-      - DATABASE_PATH=/app/photos_metadata.db
+      - DATABASE_PATH=/app/data/photos_metadata.db
       - BACKEND_URL=${BACKEND_URL}
       # R2 credentials (read-only access for metadata)
       - R2_ENDPOINT_URL=${R2_ENDPOINT_URL}
@@ -19,18 +19,8 @@ services:
       - R2_BUCKET_NAME=${R2_BUCKET_NAME}
     volumes:
       # Persist database (with EXIF data)
-      - database:/app/data
-    restart: unless-stopped
-
-  frontend:
-    image: ghcr.io/${GITHUB_USERNAME}/photography-portfolio-frontend:latest
-    ports:
-      - "80:80"
-    environment:
-      - VITE_API_URL=${BACKEND_URL}/api
-    depends_on:
-      - backend
+      - data:/app/data
     restart: unless-stopped
 
 volumes:
-  database:
+  data:
