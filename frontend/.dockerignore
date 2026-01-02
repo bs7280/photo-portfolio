@@ -6,8 +6,8 @@ dist/
 build/
 
 # Development
-.env
 .env.*
+!.env
 !.env.example
 
 # IDE
