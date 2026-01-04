@@ -9,7 +9,7 @@ from pathlib import Path
 import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
-from PIL import Image
+from PIL import Image, ImageOps
 import io
 
 # Load environment variables
@@ -60,6 +60,9 @@ def generate_thumbnail(image_path):
     """Generate a thumbnail for an image"""
     try:
         img = Image.open(image_path)
+
+        # Apply EXIF orientation (fixes iPhone photo rotation)
+        img = ImageOps.exif_transpose(img)
 
         # Convert RGBA to RGB if needed (for PNG with transparency)
         if img.mode in ('RGBA', 'LA', 'P'):

@@ -2,7 +2,7 @@
 Service for generating and managing photo thumbnails.
 """
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageOps
 from typing import Optional
 from app.config import Config
 
@@ -59,6 +59,9 @@ class ThumbnailService:
 
             # Open and resize image
             with Image.open(source_path) as img:
+                # Apply EXIF orientation (fixes iPhone photo rotation)
+                img = ImageOps.exif_transpose(img)
+
                 # Convert RGBA to RGB if necessary (for JPEG)
                 if img.mode in ('RGBA', 'LA', 'P'):
                     # Create white background
