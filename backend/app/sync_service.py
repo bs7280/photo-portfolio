@@ -59,8 +59,8 @@ class SyncService:
                 if 'Contents' in page:
                     for obj in page['Contents']:
                         key = obj['Key']
-                        # Skip thumbnails directory
-                        if not key.startswith('thumbnails/'):
+                        # Skip thumbnails and metadata directories
+                        if not key.startswith('thumbnails/') and not key.startswith('metadata/'):
                             objects.add(key)
 
             return objects
