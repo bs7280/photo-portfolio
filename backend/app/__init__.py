@@ -15,10 +15,16 @@ def create_app():
 
     # Initialize database if it doesn't exist
     with app.app_context():
+        from app.config import Config
+
+        # Download published database from R2 when using CDN (for fly.io deployment)
+        if Config.USE_CDN:
+            database.download_published_db_from_r2()
+
+        # Initialize database
         database.init_db()
 
         # Auto-sync photos on startup when not using CDN
-        from app.config import Config
         if not Config.USE_CDN:
             from app.photo_service import PhotoService
             photo_service = PhotoService()

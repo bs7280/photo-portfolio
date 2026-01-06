@@ -111,28 +111,26 @@ class PhotoService:
         """Get all photos with their metadata (EXIF + database)"""
         photos = []
 
-        # Use R2 when CDN is enabled
+        # Use R2 when CDN is enabled - read from downloaded published database
         if self.use_cdn and self.s3_client:
-            for key in self._list_r2_objects():
-                filename = os.path.basename(key)
+            # Get all photos from database (which was downloaded from R2 on startup)
+            # This is much faster than listing R2 objects
+            all_db_photos = get_all_photo_metadata()
 
-                # Get custom metadata from database (if available)
-                db_meta = get_photo_metadata(key) or {}
-
-                # When using CDN/R2, don't filter by published flag
-                # R2 only contains published photos (filtered during sync)
-                # Database filtering only applies to local filesystem mode
+            for db_meta in all_db_photos:
+                path = db_meta['path']
+                filename = os.path.basename(path)
 
                 photos.append({
-                    'id': key.replace('/', '_').replace('\\', '_'),
+                    'id': path.replace('/', '_').replace('\\', '_'),
                     'filename': filename,
-                    'path': key,
-                    'url': self.get_photo_url(key),
-                    'thumbnail_url': self.get_photo_url(key, is_thumbnail=True),
-                    'metadata': db_meta.get('exif_data', {}),  # Use stored EXIF from database
-                    'album': self._get_album_name_from_path(key),
-                    # Add custom metadata from database (if available)
-                    'published': db_meta.get('published', True),  # Default to True in CDN mode
+                    'path': path,
+                    'url': self.get_photo_url(path),
+                    'thumbnail_url': self.get_photo_url(path, is_thumbnail=True),
+                    'metadata': db_meta.get('exif_data', {}),  # EXIF stored in database
+                    'album': self._get_album_name_from_path(path),
+                    # All photos in published database are published
+                    'published': True,
                     'custom_title': db_meta.get('custom_title'),
                     'description': db_meta.get('description'),
                     'tags': db_meta.get('tags', []),

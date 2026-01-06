@@ -3,10 +3,12 @@ Database layer for photo metadata storage using SQLite.
 """
 import sqlite3
 import json
+import os
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 from flask import g
 from .config import Config
+import boto3
 
 
 def get_db() -> sqlite3.Connection:
@@ -430,3 +432,57 @@ def delete_album_metadata(name: str) -> bool:
     cursor = db.execute('DELETE FROM albums WHERE name = ?', (name,))
     db.commit()
     return cursor.rowcount > 0
+
+
+def download_published_db_from_r2() -> bool:
+    """
+    Download the published photos database from R2.
+    This is used on fly.io startup to get the latest published photo metadata
+    without having to list all R2 objects.
+
+    Returns:
+        True if successful, False otherwise
+    """
+    if not Config.USE_CDN:
+        print("Not using CDN, skipping database download from R2")
+        return False
+
+    if not Config.R2_ACCESS_KEY_ID:
+        print("R2 credentials not configured, skipping database download")
+        return False
+
+    try:
+        print("Downloading published database from R2...")
+
+        # Create S3 client
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=Config.R2_ENDPOINT_URL,
+            aws_access_key_id=Config.R2_ACCESS_KEY_ID,
+            aws_secret_access_key=Config.R2_SECRET_ACCESS_KEY,
+            region_name='auto'
+        )
+
+        # Download database file
+        db_path = Config.DATABASE_PATH
+
+        # Ensure directory exists
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+
+        s3_client.download_file(
+            Config.R2_BUCKET_NAME,
+            'metadata/published.db',
+            db_path
+        )
+
+        print(f"✓ Published database downloaded to {db_path}")
+        return True
+
+    except s3_client.exceptions.NoSuchKey:
+        print("Published database not found in R2 (this is normal on first sync)")
+        return False
+    except Exception as e:
+        print(f"Error downloading published database from R2: {e}")
+        import traceback
+        traceback.print_exc()
+        return False

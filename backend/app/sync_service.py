@@ -7,6 +7,8 @@ from app.config import Config
 from app.database import get_db
 from app.thumbnail_service import ThumbnailService
 import boto3
+import sqlite3
+import tempfile
 
 
 class SyncService:
@@ -216,6 +218,14 @@ class SyncService:
             # Also handle thumbnails directory cleanup
             self._sync_thumbnails(valid_published_paths)
 
+            # Export and upload published database
+            print("Exporting published photos database...")
+            db_upload_success = self._export_and_upload_published_db()
+            if db_upload_success:
+                print("✓ Published database uploaded to R2")
+            else:
+                result['warnings'].append("Failed to upload published database")
+
             if result['errors']:
                 result['success'] = False
 
@@ -251,6 +261,85 @@ class SyncService:
                             print(f"Deleted thumbnail: {key}")
         except Exception as e:
             print(f"Error syncing thumbnails: {e}")
+
+    def _export_and_upload_published_db(self) -> bool:
+        """
+        Export published photos to a separate SQLite database and upload to R2.
+        This allows the deployed version to download a lightweight database
+        instead of listing all R2 objects on startup.
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Create temporary database file
+            temp_db = tempfile.NamedTemporaryFile(mode='w+b', suffix='.db', delete=False)
+            temp_db_path = temp_db.name
+            temp_db.close()
+
+            # Connect to both databases
+            source_db = get_db()
+            export_db = sqlite3.connect(temp_db_path)
+            export_cursor = export_db.cursor()
+
+            # Create photos table in export database
+            export_cursor.execute('''
+                CREATE TABLE IF NOT EXISTS photos (
+                    path TEXT PRIMARY KEY,
+                    filename TEXT,
+                    album TEXT,
+                    published INTEGER DEFAULT 0,
+                    custom_title TEXT,
+                    description TEXT,
+                    tags TEXT,
+                    notes TEXT,
+                    exif_data TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+            # Copy only published photos
+            source_cursor = source_db.execute(
+                'SELECT * FROM photos WHERE published = 1'
+            )
+
+            # Get column names
+            columns = [description[0] for description in source_cursor.description]
+
+            # Insert published photos into export database
+            for row in source_cursor:
+                placeholders = ','.join(['?' for _ in columns])
+                export_cursor.execute(
+                    f'INSERT INTO photos ({",".join(columns)}) VALUES ({placeholders})',
+                    row
+                )
+
+            export_db.commit()
+            export_db.close()
+
+            # Upload to R2
+            print(f"Uploading published database to R2...")
+            self.s3_client.upload_file(
+                temp_db_path,
+                self.bucket_name,
+                'metadata/published.db',
+                ExtraArgs={
+                    'ContentType': 'application/x-sqlite3',
+                    'CacheControl': 'no-cache'  # Always fetch latest
+                }
+            )
+
+            # Clean up temp file
+            Path(temp_db_path).unlink()
+
+            return True
+
+        except Exception as e:
+            print(f"Error exporting published database: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
     def _get_content_type(self, path: str) -> str:
         """
