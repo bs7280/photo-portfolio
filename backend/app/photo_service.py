@@ -116,12 +116,12 @@ class PhotoService:
             for key in self._list_r2_objects():
                 filename = os.path.basename(key)
 
-                # Get custom metadata from database
+                # Get custom metadata from database (if available)
                 db_meta = get_photo_metadata(key) or {}
 
-                # Filter by published flag if not in edit mode
-                if not Config.EDIT_MODE and not db_meta.get('published', False):
-                    continue
+                # When using CDN/R2, don't filter by published flag
+                # R2 only contains published photos (filtered during sync)
+                # Database filtering only applies to local filesystem mode
 
                 photos.append({
                     'id': key.replace('/', '_').replace('\\', '_'),
@@ -131,8 +131,8 @@ class PhotoService:
                     'thumbnail_url': self.get_photo_url(key, is_thumbnail=True),
                     'metadata': db_meta.get('exif_data', {}),  # Use stored EXIF from database
                     'album': self._get_album_name_from_path(key),
-                    # Add custom metadata from database
-                    'published': db_meta.get('published', False),
+                    # Add custom metadata from database (if available)
+                    'published': db_meta.get('published', True),  # Default to True in CDN mode
                     'custom_title': db_meta.get('custom_title'),
                     'description': db_meta.get('description'),
                     'tags': db_meta.get('tags', []),
