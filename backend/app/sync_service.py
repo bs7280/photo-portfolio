@@ -96,7 +96,8 @@ class SyncService:
             'warnings': [],
             'uploaded_files': [],
             'deleted_files': [],
-            'thumbnails_generated': 0
+            'thumbnails_generated': 0,
+            'database_exported': False
         }
 
         try:
@@ -221,6 +222,7 @@ class SyncService:
             # Export and upload published database
             print("Exporting published photos database...")
             db_upload_success = self._export_and_upload_published_db()
+            result['database_exported'] = db_upload_success
             if db_upload_success:
                 print("✓ Published database uploaded to R2")
             else:

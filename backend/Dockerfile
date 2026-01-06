@@ -48,5 +48,6 @@ RUN mkdir -p /app/photos /app/thumbnails
 # Expose port
 EXPOSE 5001
 
-# Run with gunicorn via uv (1 worker to save memory on fly.io)
-CMD uv run gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 1 --timeout 120 run:app
+# Activate venv and run gunicorn directly (1 worker to save memory on fly.io)
+# This uses the pre-built venv instead of recreating it with 'uv run'
+CMD ["/bin/sh", "-c", ". .venv/bin/activate && exec gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 1 --timeout 120 run:app"]

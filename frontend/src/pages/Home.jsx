@@ -87,10 +87,9 @@ const Home = () => {
 
   return (
     <div className="home">
-      <header className="header">
-        <h1>Photography Portfolio</h1>
-        <p>{photos.length} photos</p>
-      </header>
+      <div className="photo-count-bar">
+        {photos.length} photos
+      </div>
 
       {editMode && selectedPhotos.length > 0 && (
         <BulkActionsBar
