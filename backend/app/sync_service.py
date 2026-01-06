@@ -284,11 +284,12 @@ class SyncService:
             export_db = sqlite3.connect(temp_db_path)
             export_cursor = export_db.cursor()
 
-            # Create photos table in export database
+            # Create photos table in export database (matching source schema)
             export_cursor.execute('''
                 CREATE TABLE IF NOT EXISTS photos (
-                    path TEXT PRIMARY KEY,
-                    filename TEXT,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    path TEXT UNIQUE NOT NULL,
+                    filename TEXT NOT NULL,
                     album TEXT,
                     published INTEGER DEFAULT 0,
                     custom_title TEXT,
