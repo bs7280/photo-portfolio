@@ -478,11 +478,14 @@ def download_published_db_from_r2() -> bool:
         print(f"✓ Published database downloaded to {db_path}")
         return True
 
-    except s3_client.exceptions.NoSuchKey:
-        print("Published database not found in R2 (this is normal on first sync)")
-        return False
     except Exception as e:
-        print(f"Error downloading published database from R2: {e}")
-        import traceback
-        traceback.print_exc()
+        # Handle 404 (database doesn't exist yet - normal on first deploy)
+        error_msg = str(e)
+        if '404' in error_msg or 'Not Found' in error_msg or 'NoSuchKey' in error_msg:
+            print("Published database not found in R2 (this is normal before first sync)")
+            print("App will start with empty photo list until you sync from admin")
+        else:
+            print(f"Error downloading published database from R2: {e}")
+            import traceback
+            traceback.print_exc()
         return False

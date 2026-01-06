@@ -48,5 +48,5 @@ RUN mkdir -p /app/photos /app/thumbnails
 # Expose port
 EXPOSE 5001
 
-# Run with gunicorn via uv
-CMD uv run gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 2 --timeout 120 run:app
+# Run with gunicorn via uv (1 worker to save memory on fly.io)
+CMD uv run gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 1 --timeout 120 run:app
